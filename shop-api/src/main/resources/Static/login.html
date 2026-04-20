@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>감자몰 - 로그인</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f5f6fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background: white; padding: 40px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 380px; text-align: center; }
+        .logo { font-size: 32px; font-weight: 900; color: #e67e22; margin-bottom: 30px; cursor: pointer; }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: #e67e22; }
+        .login-btn { width: 100%; padding: 15px; background: #e67e22; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .signup-btn { margin-top: 25px; display: block; text-decoration: none; color: #e67e22; font-weight: bold; font-size: 14px; border: 1px solid #e67e22; padding: 10px; border-radius: 10px; }
+
+        /* 카카오 버튼 스타일 */
+        .divider { margin: 30px 0; border-top: 1px solid #eee; position: relative; }
+        .divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: white; padding: 0 15px; color: #bbb; font-size: 12px; }
+        .kakao-btn { width: 100%; padding: 13px; background: #fee500; color: #3c1e1e; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <div class="logo" onclick="location.href='/'">🥔 감자몰</div>
+    <input type="text" id="loginId" placeholder="아이디">
+    <input type="password" id="password" placeholder="비밀번호" onkeyup="if(window.event.keyCode==13)login()">
+    <button class="login-btn" onclick="login()">로그인</button>
+
+    <a href="/signup.html" class="signup-btn">아직 회원이 아니신가요? 회원가입</a>
+
+    <div class="divider"><span>또는</span></div>
+    <a href="#" class="kakao-btn" onclick="alert('카카오 로그인 기능은 준비 중입니다!')">
+        <img src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png" width="20" alt="kakao">
+        카카오톡으로 로그인하기
+    </a>
+</div>
+<script>
+    function login() {
+        const loginId = document.getElementById('loginId').value;
+        const password = document.getElementById('password').value;
+
+        if (!loginId || !password) {
+            alert('아이디와 비밀번호를 입력해주세요!');
+            return;
+        }
+
+
+        const formData = new URLSearchParams();
+        formData.append('loginId', loginId);
+        formData.append('password', password);
+
+        fetch('/api/member/login', {
+            method: 'POST',
+            headers: {
+              // 데이터주입
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString()
+        })
+        .then(res => res.text())
+        .then(data => {
+            // 서버 응답이 'fail'이 아니고, 에러 JSON({)도 아닐 때만 성공
+            if (data !== 'fail' && !data.startsWith('{')) {
+                alert(data + '님, 환영합니다! 🥔');
+                // 세션
+                location.replace('/');
+            } else {
+                alert('아이디 또는 비밀번호가 틀렸습니다.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('서버 연결에 실패했습니다.');
+        });
+    }
+</script>
+</body>
+</html>

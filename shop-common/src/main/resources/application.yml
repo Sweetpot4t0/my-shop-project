@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    # 도커에 띄운 포스트그레 주소 (1234)
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: '1234'
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # 서버 켜질 때마다 테이블을 자동으로 만들어주는 옵션
+      ddl-auto: update
+    show-sql: true #
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect

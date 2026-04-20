@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>감자몰 - 상품 주문</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; margin: 0; background-color: #f5f6fa; color: #2d3436; }
+        header { background: white; padding: 20px 50px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo { font-size: 28px; font-weight: 900; color: #e67e22; cursor: pointer; text-decoration: none; }
+
+        main { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
+
+        .order-container {
+            display: flex; gap: 50px; align-items: stretch; background: white;
+            padding: 40px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        /* 왼쪽: 사진 구역 */
+        .product-visual {
+            flex: 1.2; background-color: #f9f9f9; border-radius: 20px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 180px; border: 1px solid #eee; min-height: 450px;
+        }
+
+        /* 오른쪽: 상품 정보 */
+        .product-details {
+            flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        .product-details h1 { margin: 0; font-size: 34px; font-weight: 900; }
+        .price-text { font-size: 26px; color: #e67e22; font-weight: bold; margin: 15px 0 30px; }
+
+        /*  박스 길이 통일을 위한 설정 */
+        .form-group { margin-bottom: 25px; width: 100%; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 10px; color: #636e72; font-size: 15px; }
+
+        /* select와 input의 너비를 100%로 맞추고 box-sizing을 지정하여 길이 통일 */
+        select, input[type="number"] {
+            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #ddd;
+            outline: none; font-size: 16px; transition: 0.3s;
+            box-sizing: border-box; /* 패딩 포함 너비 계산 */
+        }
+        select:focus, input:focus { border-color: #e67e22; }
+
+        .action-area { margin-top: 40px; text-align: center; }
+        .next-step-btn {
+            background: #2d3436; color: white; padding: 22px 0; border: none; border-radius: 18px;
+            font-size: 19px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; max-width: 500px;
+        }
+        .next-step-btn:hover { background: #e67e22; transform: translateY(-3px); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo" onclick="location.href='/'">🥔 감자몰</div>
+</header>
+
+<main>
+    <div class="order-container">
+        <div class="product-visual" id="p-image">👟</div>
+
+        <div class="product-details">
+            <div>
+                <h1 id="p-name">상품 로딩 중...</h1>
+                <div class="price-text" id="p-price">0원</div>
+                <p id="p-stock" style="color: #999; font-size: 14px;"></p>
+            </div>
+
+            <div class="options-area">
+                <div class="form-group">
+                    <label>쿠폰 적용</label>
+                    <select id="coupon-select">
+                        <option value="0">사용 가능한 쿠폰을 선택하세요</option>
+                        <option value="5000">오픈 기념 5,000원 할인 쿠폰</option>
+                        <option value="0.1">첫 구매 10% 감사 쿠폰</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>주문 수량</label>
+                    <input type="number" id="p-quantity" value="1" min="1">
+                </div>
+            </div>
+
+            <div style="background: #f1f2f6; padding: 15px; border-radius: 10px; font-size: 13px; color: #747d8c;">
+                🚚 지금 주문하면 <strong>내일 아침 7시 전</strong> 도착 보장!
+            </div>
+        </div>
+    </div>
+
+    <div class="action-area">
+        <button class="next-step-btn" onclick="goNext()">다음 단계로 (주소 입력)</button>
+    </div>
+</main>
+
+<script>
+    const id = new URLSearchParams(window.location.search).get('id');
+
+    if (id) {
+        fetch(`/products/${id}`)
+            .then(res => res.json())
+            .then(p => {
+                document.getElementById('p-name').innerText = p.name;
+                document.getElementById('p-price').innerText = p.price.toLocaleString() + "원";
+                document.getElementById('p-stock').innerText = `현재 재고: ${p.stockQuantity}개 남음`;
+
+                // ⭐ 상품명에 따른 이모지 변경 로직 추가
+                const imageBox = document.getElementById('p-image');
+                if (p.name.includes('아이폰') || p.name.includes('갤럭시')) {
+                    imageBox.innerText = '📱';
+                } else if (p.name.includes('맥북') || p.name.includes('노트북')) {
+                    imageBox.innerText = '💻';
+                } else if (p.name.includes('에어팟') || p.name.includes('버즈')) {
+                    imageBox.innerText = '🎧';
+                } else if (p.name.includes('감자')) {
+                    imageBox.innerText = '🥔';
+                } else {
+                    imageBox.innerText = '👟'; // 기본값
+                }
+            });
+    }
+
+    function goNext() {
+        const qty = document.getElementById('p-quantity').value;
+        const coupon = document.getElementById('coupon-select').value;
+        location.href = `/address.html?id=${id}&qty=${qty}&coupon=${coupon}`;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 모드 - 감자몰</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; margin: 0; background-color: #f1f2f6; }
+        header { background: #2d3436; padding: 15px 50px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 20px; font-weight: bold; color: #e67e22; text-decoration: none; }
+        main { max-width: 1000px; margin: 40px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { font-size: 22px; margin-bottom: 20px; color: #2d3436; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f9f9f9; color: #666; font-size: 14px; }
+        tr:hover { background-color: #fcfcfc; }
+        .status-badge { background: #e1f5fe; color: #039be5; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .error-msg { text-align: center; color: #ff7675; padding: 50px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="/" class="logo">🥔 감자몰 ADMIN</a>
+    <span id="admin-name">관리자님</span>
+</header>
+
+<main>
+    <h1>📦 전체 주문 관리 현황</h1>
+    <table>
+        <thead>
+        <tr>
+            <th>주문번호</th>
+            <th>주문자(ID)</th>
+            <th>상품명</th>
+            <th>수량</th>
+            <th>총 결제금액</th>
+            <th>주문일시</th>
+            <th>상태</th>
+        </tr>
+        </thead>
+        <tbody id="admin-order-list">
+        <tr><td colspan="7" style="text-align:center; padding:50px;">데이터를 불러오는 중... 🥔</td></tr>
+        </tbody>
+    </table>
+</main>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        loadAllOrders();
+    });
+
+    function loadAllOrders() {
+        var listBody = document.getElementById('admin-order-list');
+
+        fetch('/api/admin/orders')
+            .then(function(res) {
+                if (!res.ok) {
+                    // status를 직접 문자열에 더해 에러 던짐
+                    throw new Error("HTTP_ERROR_" + res.status);
+                }
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data || data.length === 0) {
+                    listBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:50px;">주문 내역이 비어있습니다. 🥔</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                for (var i = 0; i < data.length; i++) {
+ // admin.html 내의 for 루프 안쪽
+var order = data[i];
+var date = new Date(order.orderDate).toLocaleString();
+
+// 1. 객체가 있는지 확인 (안전장치)
+var memberObj = order.member || {};
+
+// 2. 이름 가져오기 (name 필드가 확실한지 확인)
+var memberName = memberObj.name || '이름없음';
+
+// 3. ID 가져오기 (loginId 혹은 login_id 둘 다 체크)
+var loginId = memberObj.loginId || memberObj.login_id || 'ID미설정';
+
+html += '<tr>' +
+        '<td>' + order.id + '</td>' +
+        '<td>' + memberName + ' (' + loginId + ')</td>' +
+        '<td><b>' + order.productName + '</b></td>' +
+        '<td>' + order.quantity + '개</td>' +
+        '<td>' + (order.totalPrice ? order.totalPrice.toLocaleString() : 0) + '원</td>' +
+        '<td style="font-size: 13px; color: #888;">' + date + '</td>' +
+        '<td><span class="status-badge">결제완료</span></td>' +
+        '</tr>';
+                }
+                listBody.innerHTML = html;
+            })
+            .catch(function(err) {
+                console.error(err);
+                // 에러 발생 시 안내 메시지 (문자열 결합 방식)
+                listBody.innerHTML = '<tr><td colspan="7" class="error-msg">' +
+                    '⚠️ 데이터를 불러오지 못했습니다.<br>' +
+                    '사유: ' + err.message + '<br><br>' +
+                    '<button onclick="location.href=\'/login.html\'">다시 로그인하기</button>' +
+                    '</td></tr>';
+            });
+    }
+</script>
+</body>
+</html>

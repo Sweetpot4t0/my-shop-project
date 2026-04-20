@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>감자몰</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #f5f6fa; }
+        /* 블러 */
+        #container-wrapper.blur { filter: blur(8px); pointer-events: none; }
+
+        header { background: white; padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 28px; font-weight: 900; color: #e67e22; position: absolute; left: 50%; transform: translateX(-50%); cursor: pointer; }
+        .login-top-btn { text-decoration: none; background-color: #e67e22; color: white; padding: 10px 25px; border-radius: 25px; font-size: 14px; font-weight: bold; }
+        .user-info { font-weight: bold; font-size: 15px; color: #e67e22; cursor: pointer; }
+        .logout-link { font-size: 12px; color: #999; text-decoration: none; margin-left: 10px; }
+
+        main { flex: 1; padding: 40px 50px; display: flex; flex-direction: column; gap: 60px; }
+        .section-title { font-size: 22px; font-weight: bold; margin-bottom: 25px; color: #2d3436; border-left: 6px solid #e67e22; padding-left: 15px; }
+        .keyword-tag { display: inline-block; padding: 10px 20px; background: white; border-radius: 30px; border: 1px solid #ddd; margin-right: 10px; font-size: 14px; cursor: pointer; }
+
+        .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
+        .product-card { background: white; padding: 20px; border-radius: 15px; text-align: center; transition: 0.3s; border: 1px solid #eee; cursor: pointer; }
+        .product-card:hover { transform: translateY(-5px); border-color: #e67e22; }
+
+        /* 팝업 스타일 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 40px; border-radius: 25px; text-align: center; width: 350px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-btn { background: #e67e22; color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; margin-top: 20px; font-weight: bold; }
+
+        footer { background: #2f3640; color: white; padding: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="container-wrapper">
+    <header>
+        <div style="width: 100px;"></div>
+        <div class="logo" onclick="location.href='/'">🥔 감자몰</div>
+        <div id="auth-box"></div>
+    </header>
+
+    <main>
+        <section>
+            <div class="section-title">지금 뜨는 감자 키워드</div>
+            <div>
+                <span class="keyword-tag"># 강원도 수미감자</span>
+                <span class="keyword-tag"># 무설탕 감자칩</span>
+                <span class="keyword-tag"># 한정판 감자빵</span>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-title">오늘만 이 가격! 타임세일</div>
+            <div id="product-list" class="product-grid"></div>
+        </section>
+    </main>
+
+    <footer>현재 감자몰 쇼핑객: <span id="user-count" style="color:#f1c40f">0</span>명</footer>
+</div>
+
+<div id="event-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 style="color:#e67e22;">🎁 진행 중인 이벤트</h2>
+        <p>지금 가입하면 강원도 햇감자<br><b>1박스 9,900원!</b></p>
+        <button class="modal-btn" onclick="closeModal()">확인</button>
+        <div style="margin-top:15px; font-size:12px; color:#999; cursor:pointer;" onclick="closeModal(true)">오늘 하루 보지 않기</div>
+    </div>
+</div>
+
+<script>
+    // 1. 팝업 로직 (블러 포함)
+    function openModal() {
+        if (!localStorage.getItem('hideEvent')) {
+            document.getElementById('event-modal').style.display = 'flex';
+            document.getElementById('container-wrapper').classList.add('blur');
+        }
+    }
+
+    function closeModal(isPermanent) {
+        document.getElementById('event-modal').style.display = 'none';
+        document.getElementById('container-wrapper').classList.remove('blur');
+        if (isPermanent) {
+            localStorage.setItem('hideEvent', 'true');
+        }
+    }
+
+    window.onload = openModal;
+
+    // 2. 로그인 체크 (이름 클릭 시 마이페이지 이동 로직 포함)
+    fetch('/api/member/current')
+        .then(res => res.text())
+        .then(name => {
+            const authBox = document.getElementById('auth-box');
+            // 'guest'가 아니고 에러 메시지가 아닐 때 (정상 로그인 상태)
+            if (name && name !== 'guest' && !name.startsWith('{')) {
+                authBox.innerHTML = `
+                    <span class="user-info" onclick="goToMyPage()">✨ ${name}님</span>
+                    <a href="#" class="logout-link" onclick="logout()">로그아웃</a>`;
+            } else {
+                authBox.innerHTML = `<a href="/login.html" class="login-top-btn">로그인</a>`;
+            }
+        });
+
+    //  마이페이지 이동 전용 함수
+    function goToMyPage() {
+        location.href = './mypage.html';
+
+    }
+
+    // 3. 상품 목록
+    fetch('/products')
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('product-list');
+            data.forEach(p => {
+                list.innerHTML += `
+                    <div class="product-card" onclick="checkLoginAndGoDetail(${p.id})">
+                        <div style="font-size:50px; margin-bottom:15px;">🥔</div>
+                        <b>${p.name}</b><br>
+                        <span style="color:#e67e22; font-weight:bold;">${p.price.toLocaleString()}원</span>
+                    </div>`;
+            });
+        });
+
+    //  상품 상세페이지 이동 전 체크
+    function checkLoginAndGoDetail(productId) {
+        fetch('/api/member/current')
+            .then(res => res.text())
+            .then(name => {
+                if (name && name !== 'guest' && !name.startsWith('{')) {
+                    location.href = `/product-detail.html?id=${productId}`;
+                } else {
+                    alert('로그인이 필요한 서비스입니다');
+                    location.href = '/login.html';
+                }
+            });
+    }
+
+    function logout() {
+        if(confirm('로그아웃 하시겠습니까?')) {
+            fetch('/api/member/logout', { method: 'POST' }).then(() => location.reload());
+        }
+    }
+</script>
+</body>
+</html>

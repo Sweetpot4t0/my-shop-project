@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>마이페이지 - 감자몰</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; margin: 0; background-color: #f5f6fa; color: #2d3436; }
+        header { background: white; padding: 20px 50px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo { font-size: 24px; font-weight: 900; color: #e67e22; cursor: pointer; text-decoration: none; }
+
+        main { max-width: 800px; margin: 50px auto; padding: 0 20px; }
+        .mypage-card { background: white; padding: 40px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h1 { font-size: 24px; margin-bottom: 30px; border-bottom: 2px solid #f1f2f6; padding-bottom: 15px; }
+
+        .section { margin-bottom: 40px; }
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #e67e22; }
+
+        /* 관리자 전용 버튼 스타일 */
+        .admin-box { background: #2d3436; padding: 20px; border-radius: 15px; margin-bottom: 30px; display: none; border: 2px solid #e67e22; }
+        .admin-box p { color: #e67e22; margin: 0 0 10px 0; font-weight: bold; font-size: 14px; }
+        .btn-admin { background: #e67e22; color: white; width: 100%; padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; }
+
+        /* 주문내역 스타일 */
+        .order-item { border: 1px solid #eee; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .order-info b { font-size: 16px; display: block; }
+        .order-info p { margin: 5px 0 0; color: #777; font-size: 14px; }
+
+        /* 설정 버튼들 */
+        .input-group { display: flex; gap: 10px; margin-top: 10px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; outline: none; }
+        button { padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-update { background: #e67e22; color: white; }
+        .btn-withdraw { background: #ff7675; color: white; margin-top: 20px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="/" class="logo">🥔 감자몰</a>
+</header>
+
+<main>
+    <div class="mypage-card">
+        <h1>✨ <span id="user-name-display">사용자</span>님, 반가워요!</h1>
+
+        <div id="admin-section" class="admin-box">
+            <p>Master Mode 활성화됨</p>
+            <button class="btn-admin" onclick="location.href='/admin.html'">📦 전체 주문 관리 시스템 진입</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📦 최근 주문 내역</div>
+            <div id="order-list">
+                <p style="text-align: center; color: #bbb; font-size: 14px; padding: 20px;">주문 내역을 불러오는 중입니다... 🥔</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🔐 비밀번호 변경</div>
+            <div class="input-group">
+                <input type="password" id="newPassword" placeholder="새로운 비밀번호를 입력하세요">
+                <button class="btn-update" onclick="updatePassword()">변경하기</button>
+            </div>
+        </div>
+
+        <div class="section" style="margin-top: 60px; border-top: 1px solid #eee; padding-top: 20px;">
+            <div class="section-title" style="color: #bbb;">계정 관리</div>
+            <p style="font-size: 13px; color: #999;">탈퇴 시 모든 주문 내역과 혜택이 삭제되며 복구할 수 없습니다.</p>
+            <button class="btn-withdraw" onclick="withdraw()">회원 탈퇴하기</button>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        checkLoginAndRole(); // 로그인과 권한을 한 번에 체크
+        loadMyOrders();
+    });
+
+    // 1. 유저 정보 체크 (이름 + 권한)
+    function checkLoginAndRole() {
+        fetch('/api/member/current-info')
+            .then(res => res.json())
+            .then(user => {
+                // 로그인 안 된 상태 처리
+                if (!user || user.loginId === 'guest') {
+                    alert('로그인이 필요한 페이지입니다. 🥔');
+                    location.replace('/login.html');
+                    return;
+                }
+
+                // 이름 표시
+                document.getElementById('user-name-display').innerText = user.name;
+
+                //  관리자 권한 확인 로직
+                if (user.role === 'ADMIN') {
+                    document.getElementById('admin-section').style.display = 'block';
+                }
+            })
+            .catch(() => location.replace('/login.html'));
+    }
+
+    // 2. 주문 내역 불러오기
+    function loadMyOrders() {
+        fetch('/api/member/orders')
+            .then(res => res.json())
+            .then(data => {
+                const orderListDiv = document.getElementById('order-list');
+                if (!data || data.length === 0) {
+                    orderListDiv.innerHTML = '<p style="text-align: center; color: #bbb; font-size: 14px; padding: 20px;">아직 주문한 내역이 없네요. 🥔</p>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(order => {
+                    const date = new Date(order.orderDate).toLocaleDateString('ko-KR', {
+                        year: 'numeric', month: '2-digit', day: '2-digit'
+                    });
+                    html += `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <b>${order.productName}</b>
+                                <p>${date} 주문 | 결제완료</p>
+                            </div>
+                            <span style="font-weight: bold;">${order.totalPrice.toLocaleString()}원</span>
+                        </div>`;
+                });
+                orderListDiv.innerHTML = html;
+            });
+    }
+
+    function updatePassword() {
+        const newPassword = document.getElementById('newPassword').value;
+        if (!newPassword) return alert('비밀번호를 입력해주세요!');
+        const params = new URLSearchParams();
+        params.append('newPassword', newPassword);
+        fetch('/api/member/update-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
+        }).then(res => res.text()).then(data => {
+            if (data === 'success') {
+                alert('비밀번호 변경 완료');
+                document.getElementById('newPassword').value = '';
+            }
+        });
+    }
+
+    function withdraw() {
+        if (confirm('정말로 탈퇴하시겠습니까?')) {
+            fetch('/api/member/withdraw', { method: 'POST' })
+                .then(res => res.text()).then(data => {
+                    if (data === 'success') location.href = '/';
+                });
+        }
+    }
+</script>
+</body>
+</html>
