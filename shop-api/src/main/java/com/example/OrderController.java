@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderController {
 
-    private final OrderService orderService; // 리포지토리는 삭제!
+    private final OrderService orderService;
 
     @GetMapping("/api/member/orders")
     public List<OrderResponseDto> getMyOrders(HttpSession session) {

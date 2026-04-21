@@ -105,7 +105,7 @@
                 document.getElementById('p-price').innerText = p.price.toLocaleString() + "원";
                 document.getElementById('p-stock').innerText = `현재 재고: ${p.stockQuantity}개 남음`;
 
-                // ⭐ 상품명에 따른 이모지 변경 로직 추가
+                //  상품명에 따른 이모지 변경 로직 추가
                 const imageBox = document.getElementById('p-image');
                 if (p.name.includes('아이폰') || p.name.includes('갤럭시')) {
                     imageBox.innerText = '📱';

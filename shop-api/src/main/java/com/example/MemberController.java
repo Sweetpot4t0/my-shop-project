@@ -49,7 +49,7 @@ public class MemberController {
     }
 
     @PostMapping("/api/member/signup")
-    public String signup(@RequestBody Member member) { // ✅ JSON 데이터를 받으려면 @RequestBody 필수!
+    public String signup(@RequestBody Member member) { //  JSON 데이터를 받으려면 @RequestBody
         try {
             // 서비스에게 회원가입(비밀번호 암호화 및 저장)을 시킵니다.
             memberService.join(member);
