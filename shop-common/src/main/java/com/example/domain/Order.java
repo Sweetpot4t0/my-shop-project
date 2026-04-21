@@ -17,7 +17,6 @@ public class Order {
 
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JsonIgnoreProperties({"password", "orders"})
     @JoinColumn(name = "member_id")
     private Member member;
 
@@ -25,4 +24,10 @@ public class Order {
     private int quantity;
     private int totalPrice;
     private LocalDateTime orderDate;
+    // Order 엔티티에 상태 필드 추가
+    private String status = "PAYED"; // 기본값: 결제완료
+
+    public void cancel() {
+        this.status = "CANCELED";
+    }
 }

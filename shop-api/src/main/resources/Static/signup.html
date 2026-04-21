@@ -83,7 +83,7 @@
 
         if(!loginId) { alert('아이디를 입력해주세요.'); return; }
 
-        fetch(`/members/check-id?loginId=${loginId}`)
+        fetch(`/api/member/check-id?loginId=${loginId}`)
             .then(res => res.json())
             .then(isDuplicate => {
                 if(isDuplicate) {
@@ -138,7 +138,7 @@
             phone: document.getElementById('phone').value
         };
 
-        fetch('/members/signup', {
+        fetch('/api/member/signup', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)

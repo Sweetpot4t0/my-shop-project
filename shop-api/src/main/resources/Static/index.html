@@ -5,8 +5,8 @@
     <title>감자몰</title>
     <style>
         body { font-family: 'Pretendard', sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #f5f6fa; }
-        /* 블러 */
-        #container-wrapper.blur { filter: blur(8px); pointer-events: none; }
+        /* 블러 효과 */
+        #container-wrapper.blur { filter: blur(8px); pointer-events: none; transition: 0.3s; }
 
         header { background: white; padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 28px; font-weight: 900; color: #e67e22; position: absolute; left: 50%; transform: translateX(-50%); cursor: pointer; }
@@ -68,7 +68,7 @@
 </div>
 
 <script>
-    // 1. 팝업 로직 (블러 포함)
+    // 1. 팝업 & 블러 로직
     function openModal() {
         if (!localStorage.getItem('hideEvent')) {
             document.getElementById('event-modal').style.display = 'flex';
@@ -84,50 +84,77 @@
         }
     }
 
-    window.onload = openModal;
-
-    // 2. 로그인 체크 (이름 클릭 시 마이페이지 이동 로직 포함)
-    fetch('/api/member/current')
-        .then(res => res.text())
-        .then(name => {
-            const authBox = document.getElementById('auth-box');
-            // 'guest'가 아니고 에러 메시지가 아닐 때 (정상 로그인 상태)
-            if (name && name !== 'guest' && !name.startsWith('{')) {
-                authBox.innerHTML = `
-                    <span class="user-info" onclick="goToMyPage()">✨ ${name}님</span>
-                    <a href="#" class="logout-link" onclick="logout()">로그아웃</a>`;
-            } else {
-                authBox.innerHTML = `<a href="/login.html" class="login-top-btn">로그인</a>`;
-            }
-        });
-
-    //  마이페이지 이동 전용 함수
-    function goToMyPage() {
-        location.href = './mypage.html';
-
+    // 2. 로그인 체크 및 상단 UI 변경
+    function checkAuth() {
+        fetch('/api/member/current')
+            .then(res => res.text())
+            .then(name => {
+                const authBox = document.getElementById('auth-box');
+                // '손님'이 아니고 정상적인 텍스트일 때만 로그인 상태로 간주
+                if (name && name !== '손님' && name !== 'guest' && !name.startsWith('<!DOCTYPE')) {
+                    authBox.innerHTML = `
+                        <span class="user-info" onclick="goToMyPage()">✨ ${name}님</span>
+                        <a href="#" class="logout-link" onclick="logout()">로그아웃</a>`;
+                } else {
+                    authBox.innerHTML = `<a href="/login.html" class="login-top-btn">로그인</a>`;
+                }
+            })
+            .catch(() => {
+                document.getElementById('auth-box').innerHTML = `<a href="/login.html" class="login-top-btn">로그인</a>`;
+            });
     }
 
-    // 3. 상품 목록
-    fetch('/products')
-        .then(res => res.json())
-        .then(data => {
-            const list = document.getElementById('product-list');
-            data.forEach(p => {
-                list.innerHTML += `
-                    <div class="product-card" onclick="checkLoginAndGoDetail(${p.id})">
-                        <div style="font-size:50px; margin-bottom:15px;">🥔</div>
-                        <b>${p.name}</b><br>
-                        <span style="color:#e67e22; font-weight:bold;">${p.price.toLocaleString()}원</span>
-                    </div>`;
-            });
-        });
+    // 3. 상품 목록 로드 (동적 이모지 적용)
+    function loadProducts() {
+        fetch('/products')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('product-list');
+                list.innerHTML = ''; // 초기화
+                data.forEach(p => {
+                    // ✨ 상품명에 따른 이모지 매핑
+                    let emoji = '🎁';
+                    const name = p.name.toLowerCase();
+                    if (name.includes('아이폰') || name.includes('갤럭시') || name.includes('폰')) emoji = '📱';
+                    else if (name.includes('맥북') || name.includes('노트북') || name.includes('컴퓨터')) emoji = '💻';
+                    else if (name.includes('신발') || name.includes('러닝화') || name.includes('나이키')) emoji = '👟';
+                    else if (name.includes('감자')) emoji = '🥔';
 
-    //  상품 상세페이지 이동 전 체크
+                    list.innerHTML += `
+                        <div class="product-card" onclick="checkLoginAndGoDetail(${p.id})">
+                            <div style="font-size:50px; margin-bottom:15px;">${emoji}</div>
+                            <b>${p.name}</b><br>
+                            <span style="color:#e67e22; font-weight:bold;">${p.price.toLocaleString()}원</span>
+                        </div>`;
+                });
+            });
+    }
+
+    // 4. 실시간 인원수 시뮬레이션
+    function updateUserCount() {
+        const countElement = document.getElementById('user-count');
+        const randomCount = Math.floor(Math.random() * 41) + 15; // 15~55명 랜덤
+        countElement.innerText = randomCount;
+    }
+
+    // 초기 실행 및 이벤트 등록
+    window.onload = () => {
+        openModal();
+        checkAuth();
+        loadProducts();
+        updateUserCount();
+        setInterval(updateUserCount, 3000); // 3초마다 갱신
+    };
+
+    function goToMyPage() {
+        location.href = './mypage.html';
+    }
+
     function checkLoginAndGoDetail(productId) {
         fetch('/api/member/current')
             .then(res => res.text())
             .then(name => {
-                if (name && name !== 'guest' && !name.startsWith('{')) {
+                if (name && name !== '손님' && name !== 'guest' && !name.startsWith('<!DOCTYPE')) {
                     location.href = `/product-detail.html?id=${productId}`;
                 } else {
                     alert('로그인이 필요한 서비스입니다');

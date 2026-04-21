@@ -101,6 +101,7 @@
     }
 
     // 2. 주문 내역 불러오기
+// 2. 주문 내역 불러오기 (수정됨)
     function loadMyOrders() {
         fetch('/api/member/orders')
             .then(res => res.json())
@@ -116,17 +117,44 @@
                     const date = new Date(order.orderDate).toLocaleDateString('ko-KR', {
                         year: 'numeric', month: '2-digit', day: '2-digit'
                     });
+
+                    // ✅ 취소 상태 확인
+                    const isCanceled = (order.status === 'CANCELED');
+
                     html += `
-                        <div class="order-item">
+                        <div class="order-item" style="${isCanceled ? 'opacity: 0.5; background: #f9f9f9;' : ''}">
                             <div class="order-info">
-                                <b>${order.productName}</b>
-                                <p>${date} 주문 | 결제완료</p>
+                                <b style="${isCanceled ? 'text-decoration: line-through;' : ''}">${order.productName}</b>
+                                <p>${date} 주문 | ${isCanceled ? '<span style="color:red">취소완료</span>' : '결제완료'}</p>
                             </div>
-                            <span style="font-weight: bold;">${order.totalPrice.toLocaleString()}원</span>
+                            <div style="text-align: right;">
+                                <span style="font-weight: bold; display: block;">${(order.orderPrice || 0).toLocaleString()}원</span>
+                                ${!isCanceled ?
+                                    `<button onclick="cancelMyOrder(${order.orderId})" style="margin-top:5px; padding: 5px 10px; font-size:11px; cursor:pointer; background:#eee; border-radius:5px;">주문취소</button>`
+                                    : ''}
+                            </div>
                         </div>`;
                 });
                 orderListDiv.innerHTML = html;
             });
+    }
+
+    // ✅ 3. 고객용 주문 취소 함수 추가
+    function cancelMyOrder(orderId) {
+        if (!confirm("정말 주문을 취소하시겠습니까? 🥔")) return;
+
+        fetch('/api/admin/orders/' + orderId + '/cancel', {
+            method: 'POST'
+        })
+        .then(res => {
+            if (res.ok) {
+                alert("취소가 완료되었습니다.");
+                loadMyOrders(); // 목록 새로고침
+            } else {
+                alert("취소 처리 중 오류가 발생했습니다.");
+            }
+        })
+        .catch(err => alert("서버 통신 오류가 발생했습니다."));
     }
 
     function updatePassword() {

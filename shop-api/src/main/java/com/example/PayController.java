@@ -39,7 +39,7 @@ public class PayController {
         productService.reduceStock(id, qty);
 
         // 3. DB 기록 남기기
-        if (loginMember != null) {
+
             Order order = Order.builder()
                     .member(loginMember)
                     .productName(product.getName())
@@ -49,8 +49,8 @@ public class PayController {
                     .build();
 
             orderRepository.save(order);
-        }
 
-        return "ok";
+
+        return "sucess";
     }
 }
